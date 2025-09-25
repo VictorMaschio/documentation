@@ -178,8 +178,50 @@ Docker provides several networking options to connect containers, each suited fo
 
 ### Custom Networks
 
--   You can create your own networks to isolate groups of containers or control subnets, IPs, and communication rules.
--   Docker supports multiple drivers: bridge, overlay (for swarm mode), macvlan, and host.
+In addition to the default networks, Docker supports creating custom networks. These allow you to isolate groups of containers, define custom subnets, and fine-tune how containers communicate with each other or external systems.
+
+Macvlan :
+
+-   Makes containers appear as physical devices on the LAN, each with its own unique MAC and IP address.
+-   Useful when containers must be directly accessible on the same network as the host (e.g., IoT devices, legacy systems).
+-   ⚠ By default, the host cannot directly communicate with containers on a macvlan network without additional routing.
+
+```bash
+docker network create -d macvlan \
+  --subnet=192.168.1.0/24 --gateway=192.168.1.1 \
+  -o parent=eth0 mymacvlan
+
+docker run -d --network mymacvlan alpine sleep 3600
+```
+
+Ipvlan :
+
+-   Similar to macvlan, but containers share the host’s MAC address (L2 mode) or get routed at Layer 3 (L3 mode).
+-   Often simpler to configure than macvlan, and works in environments where multiple MACs per port are not allowed.
+
+```bash
+docker network create -d ipvlan \
+  --subnet=192.168.1.0/24 --gateway=192.168.1.1 \
+  -o parent=eth0 myipvlan
+
+docker run -d --network myipvlan alpine sleep 3600
+```
+
+DNS Overrides :
+
+-   Docker provides a built-in DNS resolver at 127.0.0.11 for container name resolution.
+-   External DNS queries are forwarded to the host’s configured resolvers.
+-   You can override DNS settings per container:
+
+```bash
+docker run --network mynet --dns 8.8.8.8 busybox nslookup google.com
+```
+
+Overlay :
+
+-   Used in Docker Swarm to connect containers across multiple hosts.
+-   Useful for distributed or clustered applications.
+-   Not typically used in single-host setups.
 
 ### Useful Commands
 
